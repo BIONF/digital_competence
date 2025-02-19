@@ -11,7 +11,7 @@
 
 ### Checke den Dataframe. HINWEIS: wenn ihr den Namen der Tabelle nicht geändert habt, müsst ihr in allen Befehlen "df" durch
 ### den Namen eurer Tabelle ersetzen. Falls ihr die Datei data.xlsx direkt verwendet, heißt sie wahrscheinlich "data".
-
+df <- data
 df
 str(df)
 
@@ -135,7 +135,8 @@ final_table[, col_order] %>% arrange(pre_ohd_cat)
 ### Wenn wir für mehr als 2 Gruppen testen (z.B. alle 4 Schweregragkategorien),
 ### müssen wir den Krusal-Wallis-Test, die erweiterte Version des 
 ### Wilcoxon-Rangsummentests, verwenden.
-
+levels(as.factor(df$max_severity_hospitalization))
+levels(as.factor(df$pre_ohd_cat))
 
 ### 01. Vergleiche die Vitamin-D-Spiegel vor der Infektion innerhalb aller Schweregradkategorien
 
@@ -145,25 +146,25 @@ final_table[, col_order] %>% arrange(pre_ohd_cat)
 # Dafür verwenden wir den Shapiro Test
 
 # Bitte beachten, dass die Daten für 25(OH)D-Spiegel >= 40 nicht verwendet wurden
+filtered_df <- df %>% filter(pre_ohd_cat != ">=40")
+
 # Für die "Mild" Gruppe
-test_df <- df %>% filter(pre_ohd_cat != ">=40", max_severity_hospitalization == "Mild")
-print(shapiro.test(test_df$pre_ohd))
+test_df <- filtered_df %>% filter(max_severity_hospitalization == "Mild")
+shapiro.test(test_df$pre_ohd)
 # Der Test ergibt: W = 0.82805, p-value = 0.000002893
 # Da p-Wert < 0.05 ist, sind die Variable nicht normalverteilt
 # d.h., wir müssen einen nichtparametrischen Test verwenden.
 # Mache dasselbe für die anderen Gruppen
-test_df <- df %>% filter(pre_ohd_cat != ">=40", max_severity_hospitalization == "Moderate")
-print(shapiro.test(test_df$pre_ohd))
-test_df <- df %>% filter(pre_ohd_cat != ">=40", max_severity_hospitalization == "Severe")
-print(shapiro.test(test_df$pre_ohd))
-test_df <- df %>% filter(pre_ohd_cat != ">=40", max_severity_hospitalization == "Critical")
-print(shapiro.test(test_df$pre_ohd))
+test_df <- filtered_df %>% filter(max_severity_hospitalization == "Moderate")
+shapiro.test(test_df$pre_ohd)
+test_df <- filtered_df %>% filter(max_severity_hospitalization == "Severe")
+shapiro.test(test_df$pre_ohd)
+test_df <- filtered_df %>% filter(max_severity_hospitalization == "Critical")
+shapiro.test(test_df$pre_ohd)
 
 ### Verwenden wir jetzt den Kruskal-Wallis-Test (weil wir mehr als 2 Gruppen haben)
 # H0: Die 25(OH)D-Spiegel unerscheiden sich nicht signifikant zwichen allen 4 Schweregradkategorien
-test_pre_ohd <- df[df$pre_ohd_cat != ">=40",]$pre_ohd
-test_severity <- df[df$pre_ohd_cat != ">=40",]$max_severity_hospitalization
-kruskal.test(test_pre_ohd, test_severity)
+kruskal.test(filtered_df$pre_ohd, filtered_df$max_severity_hospitalization)
 # Der test ergibt: Kruskal-Wallis chi-squared = 116.32, df = 3, p-value < 0.00000000000000022
 # => d.h. Die 25(OH)D-Spiegel vor der Infektion unerscheiden sich signifikant
 # zwichen allen 4 Schweregradkategorien
@@ -171,15 +172,13 @@ kruskal.test(test_pre_ohd, test_severity)
 ### 02. Vergleiche die Vitamin-D-Spiegel vor der Infektion in 2 Schweregradkategorien-Gruppen (serve/critical vs mild/moderate)
 
 ### Normalverteilung prüfen
-test_df <- df %>% filter(pre_ohd_cat != ">=40", max_severity_cat == 0)
+test_df <- filtered_df %>% filter(max_severity_cat == 0)
 print(shapiro.test(test_df$pre_ohd))
-test_df <- df %>% filter(pre_ohd_cat != ">=40", max_severity_cat == 1)
+test_df <- filtered_df %>% filter(max_severity_cat == 1)
 print(shapiro.test(test_df$pre_ohd))
 # p-Wert < 0.05 => Verwende den nichtparametrischen Wilcoxon-Rangsummen-Test (auch bekannt als Mann-Whitney-U-Test)
-test_pre_ohd <- df[df$pre_ohd_cat != ">=40",]$pre_ohd
-test_severity_cat <- df[df$pre_ohd_cat != ">=40",]$max_severity_cat
-wilcox.test(test_pre_ohd, test_severity_cat, alternative = "two.sided")
-# Der test ergibt: W = 45285, p-value < 0.00000000000000022
+wilcox.test(filtered_df$pre_ohd, filtered_df$max_severity_cat, alternative = "two.sided")
+# Der test ergibt: W = 45285, p-value < 2.2e-16
 # => d.h. Die 25(OH)D-Spiegel vor der Infektion unerscheiden sich signifikant
 # zwichen 2 Schweregradkategorien-Gruppen (serve/critical vs mild/moderate)
 
