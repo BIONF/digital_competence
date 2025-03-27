@@ -15,7 +15,7 @@
 df
 str(df)
 
-# Die letzten 2 leeren Zeilen löschen
+# Die letzten 2 leeren Zeilen löschen (wenn nötig)
 df <- df[!is.na(df$patient),]
 # Eine Kopie erstellen
 df_bkp <- df # warum ist es wichtig?
